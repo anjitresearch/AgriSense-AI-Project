@@ -1,50 +1,46 @@
 services:
   # ────────────────────────────────────────────────────────
-  # INFRASTRUCTURE
+  # INFRASTRUCTURE (Private Services)
   # ────────────────────────────────────────────────────────
+  - type: psql
+    name: agrisense-db
+    plan: free
+
   - type: redis
     name: agrisense-redis
-    ipAllowList: [] # Private access only
+    plan: free
+    ipAllowList: [] 
 
-  - type: web
+  - type: private-service
     name: agrisense-mqtt
     env: docker
-    dockerfile_path: ./mosquitto/Dockerfile # Assuming we need a custom build for config
+    dockerfile_path: mosquitto/Dockerfile
     plan: free
-    healthCheckPath: /
-    ports:
-      - port: 1883
-        protocol: TCP
-      - port: 9001
-        protocol: TCP
+    # Mosquitto doesn't have an HTTP health check, Render's private services use TCP health checks by default.
 
-  - type: web
+  - type: private-service
     name: agrisense-influxdb
     image: influxdb:2.7
     envVars:
       - key: DOCKER_INFLUXDB_INIT_MODE
         value: setup
       - key: DOCKER_INFLUXDB_INIT_USERNAME
-        fromEnvVar: INFLUX_ADMIN_USER
+        sync: false
       - key: DOCKER_INFLUXDB_INIT_PASSWORD
-        fromEnvVar: INFLUX_ADMIN_PASS
+        sync: false
       - key: DOCKER_INFLUXDB_INIT_ORG
-        fromEnvVar: INFLUX_ORG
+        sync: false
       - key: DOCKER_INFLUXDB_INIT_BUCKET
-        fromEnvVar: INFLUX_BUCKET
+        sync: false
       - key: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
-        fromEnvVar: INFLUX_TOKEN
+        sync: false
 
   # ────────────────────────────────────────────────────────
-  # MICROSERVICES
+  # MICROSERVICES (Web Services)
   # ────────────────────────────────────────────────────────
   - type: web
     name: agrisense-orchestrator
-    buildFilter:
-      paths:
-        - orchestrator/**
     env: docker
-    dockerContext: .
     dockerfile_path: orchestrator/Dockerfile
     envVars:
       - key: MQTT_BROKER
@@ -77,7 +73,7 @@ services:
   - type: web
     name: agrisense-nutra-spec
     env: docker
-    dockerfile_path: edge_brain/Dockerfile # Shares build context
+    dockerfile_path: edge_brain/Dockerfile
     startCommand: uvicorn nutra_spec_api:app --host 0.0.0.0 --port 8002
 
   - type: web
@@ -88,12 +84,7 @@ services:
       - key: PORT
         value: 8003
 
-  - type: web
+  - type: static
     name: agrisense-dashboard
-    env: static
     buildCommand: cd dashboard && npm install && npm run build
     staticPublishPath: dashboard/dist
-
-databases:
-  - name: agrisense-db
-    plan: free
