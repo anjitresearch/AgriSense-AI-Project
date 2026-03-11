@@ -11,13 +11,13 @@ services:
     plan: free
     ipAllowList: [] 
 
-  - type: private-service
+  - type: pservice
     name: agrisense-mqtt
     env: docker
     dockerfile_path: mosquitto/Dockerfile
     plan: free
 
-  - type: private-service
+  - type: pservice
     name: agrisense-influxdb
     image: influxdb:2.7
     envVars:
