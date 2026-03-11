@@ -7,20 +7,20 @@ services:
   # INFRASTRUCTURE
   # ────────────────────────────────────────────────────────
   
-  # redis is now 'keyvalue' inside services
+  # redis is 'keyvalue' inside services
   - type: keyvalue
     name: agrisense-redis
     plan: free
     ipAllowList: [] # Private access only
 
-  # Mosquitto (MQTT) - MUST be pserv to handle TCP
-  # NOTE: Private Services do NOT have a Free plan (defaults to Starter)
+  # Mosquitto (MQTT) - Must be pserv for TCP. No Free plan.
   - type: pserv
     name: agrisense-mqtt
     runtime: docker
-    dockerfile_path: mosquitto/Dockerfile
+    dockerfilePath: mosquitto/Dockerfile
+    plan: starter
 
-  # InfluxDB - Using 'web' to allow Free plan
+  # InfluxDB - Using 'web' for Free plan
   - type: web
     name: agrisense-influxdb
     runtime: image
@@ -46,7 +46,7 @@ services:
   - type: web
     name: agrisense-orchestrator
     runtime: docker
-    dockerfile_path: orchestrator/Dockerfile
+    dockerfilePath: orchestrator/Dockerfile
     plan: free
     envVars:
       - key: MQTT_BROKER
@@ -71,7 +71,7 @@ services:
   - type: web
     name: agrisense-edge-brain
     runtime: docker
-    dockerfile_path: edge_brain/Dockerfile
+    dockerfilePath: edge_brain/Dockerfile
     plan: free
     envVars:
       - key: PORT
@@ -80,14 +80,14 @@ services:
   - type: web
     name: agrisense-nutra-spec
     runtime: docker
-    dockerfile_path: edge_brain/Dockerfile
+    dockerfilePath: edge_brain/Dockerfile
     plan: free
     startCommand: uvicorn nutra_spec_api:app --host 0.0.0.0 --port 8002
 
   - type: web
     name: agrisense-chain-proof
     runtime: docker
-    dockerfile_path: chain_proof/api/Dockerfile
+    dockerfilePath: chain_proof/api/Dockerfile
     plan: free
     envVars:
       - key: PORT
@@ -98,4 +98,4 @@ services:
     name: agrisense-dashboard
     runtime: static
     buildCommand: cd dashboard && npm install && npm run build
-    staticPublishPath: ./dashboard/dist
+    staticPublishPath: dashboard/dist
