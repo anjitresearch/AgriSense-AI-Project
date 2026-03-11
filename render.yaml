@@ -83,7 +83,7 @@ services:
     runtime: docker
     dockerfilePath: edge_brain/Dockerfile
     plan: free
-    startCommand: uvicorn nutra_spec_api:app --host 0.0.0.0 --port 8002
+    dockerCommand: uvicorn nutra_spec_api:app --host 0.0.0.0 --port 8002
 
   - type: web
     name: agrisense-chain-proof
