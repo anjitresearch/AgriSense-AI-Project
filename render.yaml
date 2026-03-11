@@ -2,24 +2,25 @@ databases:
   - name: agrisense-db
     plan: free
 
+redis:
+  - name: agrisense-redis
+    plan: free
+    ipAllowList: [] # Private access only
+
 services:
   # ────────────────────────────────────────────────────────
   # INFRASTRUCTURE (Private Services)
   # ────────────────────────────────────────────────────────
-  - type: redis
-    name: agrisense-redis
-    plan: free
-    ipAllowList: [] 
-
-  - type: pservice
+  - type: pserv
     name: agrisense-mqtt
     env: docker
     dockerfile_path: mosquitto/Dockerfile
     plan: free
 
-  - type: pservice
+  - type: pserv
     name: agrisense-influxdb
     image: influxdb:2.7
+    plan: free
     envVars:
       - key: DOCKER_INFLUXDB_INIT_MODE
         value: setup
@@ -41,6 +42,7 @@ services:
     name: agrisense-orchestrator
     env: docker
     dockerfile_path: orchestrator/Dockerfile
+    plan: free
     envVars:
       - key: MQTT_BROKER
         value: agrisense-mqtt
@@ -65,6 +67,7 @@ services:
     name: agrisense-edge-brain
     env: docker
     dockerfile_path: edge_brain/Dockerfile
+    plan: free
     envVars:
       - key: PORT
         value: 8001
@@ -73,12 +76,14 @@ services:
     name: agrisense-nutra-spec
     env: docker
     dockerfile_path: edge_brain/Dockerfile
+    plan: free
     startCommand: uvicorn nutra_spec_api:app --host 0.0.0.0 --port 8002
 
   - type: web
     name: agrisense-chain-proof
     env: docker
     dockerfile_path: chain_proof/api/Dockerfile
+    plan: free
     envVars:
       - key: PORT
         value: 8003
