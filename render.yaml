@@ -88,7 +88,8 @@ services:
       - key: PORT
         value: 8003
 
-  - type: static
+  - type: web
     name: agrisense-dashboard
+    runtime: static
     buildCommand: cd dashboard && npm install && npm run build
     staticPublishPath: dashboard/dist
