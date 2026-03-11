@@ -1,0 +1,16 @@
+{
+    "name": "chain-proof-chaincode",
+    "version": "1.0.0",
+    "description": "CHAIN-PROOF™ — Hyperledger Fabric chaincode for AgriSense-AI™",
+    "main": "farmEvent.js",
+    "scripts": {
+        "start": "fabric-chaincode-node start"
+    },
+    "dependencies": {
+        "fabric-contract-api": "^2.5.5",
+        "fabric-shim": "^2.5.5"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}

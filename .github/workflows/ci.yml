@@ -1,0 +1,62 @@
+name: AgriSense-AI CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      # We could use services here, but since the project is designed for docker-compose,
+      # it's better to run everything within the docker-compose environment in the runner.
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
+
+      - name: Set up Environment
+        run: |
+          cp .env.example .env
+          # Use default mock values from .env.example for CI
+
+      - name: Build and Start Services
+        run: |
+          docker-compose up -d --build
+
+      - name: Wait for Services
+        run: |
+          echo "Waiting for services to be healthy..."
+          # Wait for orchestrator to be healthy (it depends on other DBs/MQTT)
+          for i in {1..30}; do
+            if curl -s http://localhost:8000/status | grep -q "healthy"; then
+               echo "Orchestrator is healthy!"
+               exit 0
+            fi
+            echo "Waiting... $i"
+            sleep 5
+          done
+          echo "Timeout waiting for services"
+          docker-compose logs
+          exit 1
+
+      - name: Run Integration Tests
+        run: |
+          pytest tests/test_integration.py -v
+
+      - name: Shutdown Services
+        if: always()
+        run: docker-compose down

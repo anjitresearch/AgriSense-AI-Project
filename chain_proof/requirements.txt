@@ -1,0 +1,17 @@
+# ==============================================================
+#  CHAIN-PROOF™ QR Generator dependencies
+#  Install: pip install -r requirements.txt
+# ==============================================================
+
+# QR code generation
+qrcode[pil]==7.4.2
+Pillow==10.3.0
+
+# PDF generation
+reportlab==4.2.0
+
+# HTTP requests (for ledger gateway)
+requests==2.32.3
+
+# Misc
+python-dotenv==1.0.1

@@ -1,0 +1,150 @@
+version: "3.8"
+
+# ==============================================================
+#  AgriSense-AI™ — Master Orchestration
+#  Deploys all 5 subsystems, databases, and NGINX routing.
+# ==============================================================
+
+services:
+  # ────────────────────────────────────────────────────────
+  # INFRASTRUCTURE
+  # ────────────────────────────────────────────────────────
+  reverse-proxy:
+    image: nginx:alpine
+    container_name: agrisense-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - dashboard
+      - edge-brain
+      - nutra-spec
+      - chain-proof
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  mqtt-broker:
+    image: eclipse-mosquitto:2
+    container_name: agrisense-mqtt
+    ports:
+      - "1883:1883" # MQTT Standard
+      - "9001:9001" # MQTT WebSocket (for Dashboard)
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "mosquitto_sub", "-t", "$$SYS/#", "-C", "1", "-i", "healthcheck" ]
+      interval: 15s
+
+  influxdb:
+    image: influxdb:2.7
+    container_name: agrisense-influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUX_ADMIN_USER}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUX_ADMIN_PASS}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUX_ORG}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUX_BUCKET}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUX_TOKEN}
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8086/health" ]
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: agrisense-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 10s
+
+  # ────────────────────────────────────────────────────────
+  # SUBSYSTEMS
+  # ────────────────────────────────────────────────────────
+  orchestrator:
+    build:
+      context: ./orchestrator
+      dockerfile: Dockerfile
+    container_name: agrisense-orchestrator
+    environment:
+      - MQTT_BROKER=mqtt-broker
+      - INFLUX_URL=http://influxdb:8086
+      - INFLUX_TOKEN=${INFLUX_TOKEN}
+      - INFLUX_ORG=${INFLUX_ORG}
+      - INFLUX_BUCKET=${INFLUX_BUCKET}
+      - POSTGRES_DSN=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - EDGE_BRAIN_URL=http://edge-brain:8001
+      - NUTRA_SPEC_URL=http://nutra-spec:8002
+      - CHAIN_PROOF_URL=http://chain-proof:8003/api/v1
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+    ports:
+      - "8000:8000"
+    depends_on:
+      mqtt-broker:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  edge-brain:
+    build: ./edge_brain
+    container_name: agrisense-edge-brain
+    command: uvicorn edge_brain_api:app --host 0.0.0.0 --port 8001
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./edge_brain/models:/app/models
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8001/" ]
+
+  nutra-spec:
+    build: ./edge_brain # Assuming NUTRA-SPEC is part of edge_brain for now or similar repo structure
+    container_name: agrisense-nutra-spec
+    command: uvicorn nutra_spec_api:app --host 0.0.0.0 --port 8002
+    ports:
+      - "8002:8002"
+    restart: unless-stopped
+
+  chain-proof:
+    build: ./chain_proof/api
+    container_name: agrisense-chain-proof
+    command: uvicorn fabric_gateway:app --host 0.0.0.0 --port 8003
+    ports:
+      - "8003:8003"
+    environment:
+      - FABRIC_NETWORK_PATH=/fabric
+    restart: unless-stopped
+
+  dashboard:
+    build: ./dashboard
+    container_name: agrisense-dashboard
+    ports:
+      - "3000:80" # Built React app served via nginx inside its own container
+    environment:
+      - VITE_WS_URL=ws://localhost:9001
+    restart: unless-stopped
+
+volumes:
+  influxdb-data:
+  pg-data:

@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+.pytest_cache/
+
+# Docker
+docker-compose.override.yml
+
+# IDEs
+.vscode/
+.idea/
+
+# Node.js
+node_modules/
+dist/
+build/
+.cache/
+
+# Infrastructure data
+pg-data/
+influxdb-data/
+mosquitto/data/
+mosquitto/log/
+
+# OS
+.DS_Store
+Thumbs.db

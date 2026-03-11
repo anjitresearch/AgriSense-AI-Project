@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHAIN-PROOF™ | Consumer Portal</title>
+    <!-- Include html5-qrcode library for scanning -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        :root {
+            --bg-page: #f9fafb;
+            --bg-card: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --green: #2E7D32;
+            --green-light: #E8F5E9;
+            --red: #d32f2f;
+            --red-light: #ffebee;
+            --border: #e5e7eb;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--bg-card);
+            min-height: 100vh;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .header {
+            background: var(--green);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        .content {
+            padding: 24px;
+        }
+
+        #reader {
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: 2px dashed var(--border);
+        }
+
+        .badge {
+            display: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 24px;
+            font-size: 1.2rem;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .badge.verified {
+            display: flex;
+            background: var(--green-light);
+            color: var(--green);
+            border: 1px solid var(--green);
+        }
+
+        .badge.unverified {
+            display: flex;
+            background: var(--red-light);
+            color: var(--red);
+            border: 1px solid var(--red);
+        }
+
+        .timeline {
+            display: none;
+            flex-direction: column;
+            gap: 0;
+            position: relative;
+            margin-top: 20px;
+        }
+
+        /* Timeline vertical line */
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 10px;
+            bottom: 20px;
+            width: 2px;
+            background: var(--border);
+            z-index: 0;
+        }
+
+        .event {
+            position: relative;
+            display: flex;
+            gap: 16px;
+            padding-bottom: 30px;
+            z-index: 1;
+        }
+
+        .event-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 2px solid var(--green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .event-content {
+            background: var(--bg-page);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            flex-grow: 1;
+        }
+
+        .event-time {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-family: monospace;
+        }
+
+        .event-title {
+            font-weight: bold;
+            margin: 0 0 8px 0;
+            font-size: 1.1rem;
+        }
+
+        .tag {
+            display: inline-block;
+            background: var(--green-light);
+            color: var(--green);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+
+        .instruction {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: var(--green);
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">
+            CHAIN-PROOF™
+        </div>
+
+        <div class="content">
+            <div id="scan-container">
+                <p class="instruction">Scan the QR code on your product packaging to verify its farm-to-table journey.
+                </p>
+                <div id="reader"></div>
+            </div>
+
+            <div id="loader" class="loader">
+                Validating on Blockchain...
+            </div>
+
+            <div id="badge-verified" class="badge verified">
+                ✅ BLOCKCHAIN VERIFIED
+            </div>
+
+            <div id="badge-unverified" class="badge unverified">
+                ❌ UNVERIFIED / TAMPERED
+            </div>
+
+            <div id="timeline" class="timeline">
+                <!-- Events will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://localhost:3002/api/v1/verify";
+        let html5QrcodeScanner;
+
+        const ICONS = {
+            "SeedingEvent": "🌱",
+            "SoilEvent": "🪨",
+            "DiseaseEvent": "🔬",
+            "HarvestEvent": "🌾",
+            "ColdChainEvent": "❄️",
+            "CertificationEvent": "📄"
+        };
+
+        function onScanSuccess(decodedText, decodedResult) {
+            // Stop scanning
+            html5QrcodeScanner.clear();
+            document.getElementById('scan-container').style.display = 'none';
+            document.getElementById('loader').style.display = 'block';
+
+            try {
+                // The QR contains offline JSON: {"b": "batchId", "h": "hash"}
+                const qrData = JSON.parse(decodedText);
+
+                if (!qrData.b || !qrData.h) {
+                    throw new Error("Invalid CHAIN-PROOF™ QR format");
+                }
+
+                verifyWithBlockchain(qrData.b, qrData.h);
+
+            } catch (e) {
+                showError("Invalid or incompatible QR Code scanned.");
+            }
+        }
+
+        async function verifyWithBlockchain(batchId, hash) {
+            try {
+                const response = await fetch(`${API_URL}/${batchId}/${hash}`);
+                const result = await response.json();
+
+                document.getElementById('loader').style.display = 'none';
+
+                if (response.ok && result.verified) {
+                    document.getElementById('badge-verified').style.display = 'flex';
+                    renderTimeline(result.certdetails.timeline);
+                } else {
+                    showError("Cryptographic hash mismatch. Product may be counterfeit.");
+                }
+            } catch (e) {
+                showError("Failed to connect to the Blockchain gateway.");
+            }
+        }
+
+        function showError(msg) {
+            document.getElementById('loader').style.display = 'none';
+            const badge = document.getElementById('badge-unverified');
+            badge.style.display = 'flex';
+            badge.innerHTML = `❌ ${msg}`;
+        }
+
+        function renderTimeline(events) {
+            const tl = document.getElementById('timeline');
+            tl.style.display = 'flex';
+            tl.innerHTML = '';
+
+            events.forEach(ev => {
+                const icon = ICONS[ev.eventType] || "📝";
+                let detailsHtml = '';
+
+                // Generate tags based on event type
+                const data = ev.data;
+                if (ev.eventType === 'SeedingEvent') {
+                    detailsHtml += `<span class="tag">Crop: ${data.crop}</span><span class="tag">Var: ${data.variety}</span>`;
+                } else if (ev.eventType === 'SoilEvent') {
+                    detailsHtml += `<span class="tag">pH: ${data.pH}</span><span class="tag">Moisture: ${data.moisture}%</span>`;
+                    if (data.lab_certified) detailsHtml += `<span class="tag">Lab Tested</span>`;
+                } else if (ev.eventType === 'HarvestEvent') {
+                    detailsHtml += `<span class="tag">Yield: ${data.yield_kg}kg</span>`;
+                    if (data.nutraceutical_results) {
+                        detailsHtml += `<span class="tag">Curcumin: ${data.nutraceutical_results.curcumin}</span>`;
+                    }
+                } else if (ev.eventType === 'CertificationEvent') {
+                    detailsHtml += `<span class="tag">FSSAI: ${data.fssai_cert_no}</span>`;
+                }
+
+                const html = `
+                <div class="event">
+                    <div class="event-icon">${icon}</div>
+                    <div class="event-content">
+                        <div class="event-time">${new Date(data.date || new Date()).toLocaleDateString() || 'N/A'}</div>
+                        <h3 class="event-title">${ev.eventType.replace('Event', '')}</h3>
+                        <div>${detailsHtml}</div>
+                    </div>
+                </div>
+            `;
+                tl.innerHTML += html;
+            });
+        }
+
+        // Initialize Scanner on load
+        document.addEventListener("DOMContentLoaded", () => {
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader",
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                false
+            );
+            html5QrcodeScanner.render(onScanSuccess, (err) => { /* ignore frame errors */ });
+        });
+    </script>
+</body>
+
+</html>

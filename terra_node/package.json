@@ -1,0 +1,13 @@
+{
+    "name": "terra-node-ingester",
+    "version": "1.0.0",
+    "description": "TERRA-NODE™ — MQTT to InfluxDB Ingestion Service",
+    "main": "mqtt_ingester.js",
+    "scripts": {
+        "start": "node mqtt_ingester.js"
+    },
+    "dependencies": {
+        "@influxdata/influxdb-client": "^1.33.2",
+        "mqtt": "^5.7.0"
+    }
+}

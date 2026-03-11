@@ -1,0 +1,25 @@
+{
+    "name": "skywatch-h-api",
+    "version": "1.0.0",
+    "description": "SKYWATCH-H™ — Drone image ingestion API for AgriSense-AI™",
+    "main": "skywatch_api.js",
+    "scripts": {
+        "start": "node skywatch_api.js",
+        "dev": "nodemon skywatch_api.js"
+    },
+    "dependencies": {
+        "axios": "^1.7.2",
+        "cors": "^2.8.5",
+        "express": "^4.19.2",
+        "form-data": "^4.0.0",
+        "mqtt": "^5.7.2",
+        "multer": "^1.4.5-lts.1",
+        "uuid": "^10.0.0"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.4"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}

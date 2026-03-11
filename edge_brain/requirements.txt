@@ -1,0 +1,24 @@
+# ==============================================================
+#  EDGE-BRAIN™ — Dependencies
+#  Optimised for Raspberry Pi 4 / Edge Deployment
+# ==============================================================
+
+# Core ML and API
+fastapi==0.111.1
+uvicorn[standard]==0.30.1
+python-multipart==0.0.9
+pydantic==2.7.4
+
+# Computer Vision & Array Manip
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
+
+# Terminal UI
+rich==13.7.1
+
+# TensorFlow / TFLite
+# IMPORTANT: For training (on PC):
+tensorflow==2.16.1
+
+# IMPORTANT: For inference on Raspberry Pi ONLY:
+# tflite-runtime==2.14.0 # (Uncomment on Pi, comment tensorflow above)

@@ -1,0 +1,10 @@
+# ==============================================================
+#  AgriSense-AI™ — Orchestrator Dependencies
+# ==============================================================
+
+paho-mqtt==1.6.1
+influxdb-client==1.36.0
+psycopg2-binary==2.9.6
+requests==2.31.0
+fastapi==0.100.0
+uvicorn==0.22.0
