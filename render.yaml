@@ -2,23 +2,28 @@ databases:
   - name: agrisense-db
     plan: free
 
-redis:
-  - name: agrisense-redis
+services:
+  # ────────────────────────────────────────────────────────
+  # INFRASTRUCTURE
+  # ────────────────────────────────────────────────────────
+  
+  # redis is now 'keyvalue' inside services
+  - type: keyvalue
+    name: agrisense-redis
     plan: free
     ipAllowList: [] # Private access only
 
-services:
-  # ────────────────────────────────────────────────────────
-  # INFRASTRUCTURE (Private Services)
-  # ────────────────────────────────────────────────────────
+  # Mosquitto (MQTT) - MUST be pserv to handle TCP
+  # NOTE: Private Services do NOT have a Free plan (defaults to Starter)
   - type: pserv
     name: agrisense-mqtt
-    env: docker
+    runtime: docker
     dockerfile_path: mosquitto/Dockerfile
-    plan: free
 
-  - type: pserv
+  # InfluxDB - Using 'web' to allow Free plan
+  - type: web
     name: agrisense-influxdb
+    runtime: image
     image: influxdb:2.7
     plan: free
     envVars:
@@ -36,11 +41,11 @@ services:
         sync: false
 
   # ────────────────────────────────────────────────────────
-  # MICROSERVICES (Web Services)
+  # MICROSERVICES (All set to 'web' for Free Tier)
   # ────────────────────────────────────────────────────────
   - type: web
     name: agrisense-orchestrator
-    env: docker
+    runtime: docker
     dockerfile_path: orchestrator/Dockerfile
     plan: free
     envVars:
@@ -65,7 +70,7 @@ services:
 
   - type: web
     name: agrisense-edge-brain
-    env: docker
+    runtime: docker
     dockerfile_path: edge_brain/Dockerfile
     plan: free
     envVars:
@@ -74,22 +79,23 @@ services:
 
   - type: web
     name: agrisense-nutra-spec
-    env: docker
+    runtime: docker
     dockerfile_path: edge_brain/Dockerfile
     plan: free
     startCommand: uvicorn nutra_spec_api:app --host 0.0.0.0 --port 8002
 
   - type: web
     name: agrisense-chain-proof
-    env: docker
+    runtime: docker
     dockerfile_path: chain_proof/api/Dockerfile
     plan: free
     envVars:
       - key: PORT
         value: 8003
 
+  # Dashboard - Static site is type: web + runtime: static
   - type: web
     name: agrisense-dashboard
     runtime: static
     buildCommand: cd dashboard && npm install && npm run build
-    staticPublishPath: dashboard/dist
+    staticPublishPath: ./dashboard/dist
