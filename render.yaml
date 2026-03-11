@@ -1,11 +1,11 @@
+databases:
+  - name: agrisense-db
+    plan: free
+
 services:
   # ────────────────────────────────────────────────────────
   # INFRASTRUCTURE (Private Services)
   # ────────────────────────────────────────────────────────
-  - type: psql
-    name: agrisense-db
-    plan: free
-
   - type: redis
     name: agrisense-redis
     plan: free
@@ -16,7 +16,6 @@ services:
     env: docker
     dockerfile_path: mosquitto/Dockerfile
     plan: free
-    # Mosquitto doesn't have an HTTP health check, Render's private services use TCP health checks by default.
 
   - type: private-service
     name: agrisense-influxdb
