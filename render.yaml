@@ -7,20 +7,21 @@ services:
   # INFRASTRUCTURE
   # ────────────────────────────────────────────────────────
   
-  # redis is 'keyvalue' inside services
+  # Redis (keyvalue) BELONGS inside the services list
   - type: keyvalue
     name: agrisense-redis
     plan: free
     ipAllowList: [] # Private access only
 
-  # Mosquitto (MQTT) - Must be pserv for TCP. No Free plan.
+  # Mosquitto (MQTT) - Must be pserv for TCP support. 
+  # Non-HTTP services require the Starter plan ($7/mo).
   - type: pserv
     name: agrisense-mqtt
     runtime: docker
     dockerfilePath: mosquitto/Dockerfile
     plan: starter
 
-  # InfluxDB - Using 'web' for Free plan
+  # InfluxDB - Using 'web' to allow the Free plan
   - type: web
     name: agrisense-influxdb
     runtime: image
@@ -42,7 +43,7 @@ services:
         sync: false
 
   # ────────────────────────────────────────────────────────
-  # MICROSERVICES (All set to 'web' for Free Tier)
+  # MICROSERVICES
   # ────────────────────────────────────────────────────────
   - type: web
     name: agrisense-orchestrator
@@ -94,7 +95,7 @@ services:
       - key: PORT
         value: 8003
 
-  # Dashboard - Static site is type: web + runtime: static
+  # Dashboard - Static site (Free plan)
   - type: web
     name: agrisense-dashboard
     runtime: static
